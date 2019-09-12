@@ -1,5 +1,5 @@
 # USAGE
-# python yolo.py --image images/baggage_claim.jpg --yolo yolo-coco
+# python yolo.py --image images/<image name>.jpg --yolo yolo-coco
 
 # import the necessary packages
 import numpy as np
