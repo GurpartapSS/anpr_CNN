@@ -2,15 +2,34 @@ import keras
 import cv2
 import numpy as np
 import time
+import os
 from keras.models import model_from_json
-from glob import glob
+from os.path import splitext
+from src.label import Label
+from src.utils import getWH, nms, im2single
+from src.projection_utils import getRectPts, find_T_matrix
+from src.label import Shape, writeShapes
 
-json_file = open('wpod-net_update1.json', 'r')
+
+## Import pretrained WPO-Net model
+
+json_file = open('source_model\wpod-net_update1.json', 'r')
 loaded_model_json = json_file.read()
 json_file.close()
 loaded_model = model_from_json(loaded_model_json)
 
-loaded_model.save_weights('wpod-net_update1.h5')
+loaded_model.save_weights('source_model\wpod-net_update1.h5')
+
+## Read Input image ..currently only one image 
+
+Im_path = r"images\test_C.jpg"
+I = cv2.imread(Im_path)
+
+lp_threshold = .5
+
+ratio = float(max(I.shape[:2]))/min(I.shape[:2])
+side  = int(ratio*288.)
+bound_dim = min(side + (side%(2**4)),608)
 
 def detect_lp(model,I,max_dim,net_step,out_size,threshold):
 
@@ -33,6 +52,7 @@ def detect_lp(model,I,max_dim,net_step,out_size,threshold):
 	L,TLps = reconstruct(I,Iresized,Yr,out_size,threshold)
 
 	return L,TLps,elapsed
+
 
 def reconstruct(Iorig,I,Y,out_size,threshold=.9):
 
@@ -90,32 +110,27 @@ def reconstruct(Iorig,I,Y,out_size,threshold=.9):
 
 	return final_labels,TLps
 
-output_dir = input_dir
-
-lp_threshold = .5
-wpod_net_path = sys.argv[2]
-wpod_net = load_model(wpod_net_path)
-
-imgs_paths = glob('%s/*car.png' % input_dir)
-
-for i,img_path in enumerate(imgs_paths):
-
-	print '\t Processing %s' % img_path
-	bname = splitext(basename(img_path))[0]
-	Ivehicle = cv2.imread(img_path)
-	ratio = float(max(Ivehicle.shape[:2]))/min(Ivehicle.shape[:2])
-	side  = int(ratio*288.)
-	bound_dim = min(side + (side%(2**4)),608)
-	print "\t\tBound dim: %d, ratio: %f" % (bound_dim,ratio)
-	Llp,LlpImgs,_ = detect_lp(wpod_net,im2single(Ivehicle),bound_dim,2**4,(240,80),lp_threshold)
-
-	if len(LlpImgs):
-		Ilp = LlpImgs[0]
-		Ilp = cv2.cvtColor(Ilp, cv2.COLOR_BGR2GRAY)
-		Ilp = cv2.cvtColor(Ilp, cv2.COLOR_GRAY2BGR)
-
-		s = Shape(Llp[0].pts)
-		cv2.imwrite('%s/%s_lp.png' % (output_dir,bname),Ilp*255.)
-		writeShapes('%s/%s_lp.txt' % (output_dir,bname),[s])
 
 
+class DLabel (Label):
+
+	def __init__(self,cl,pts,prob):
+		self.pts = pts
+		tl = np.amin(pts,1)
+		br = np.amax(pts,1)
+		Label.__init__(self,cl,tl,br,prob)
+
+Llp,LlpImgs,_ = detect_lp(loaded_model,im2single(I),bound_dim,2**4,(240,80),lp_threshold)
+
+output_dir = r"images"
+bname = splitext(os.path.basename(Im_path))[0]
+
+if len(LlpImgs):
+				Ilp = LlpImgs[0]
+				Ilp = cv2.cvtColor(Ilp, cv2.COLOR_BGR2GRAY)
+				Ilp = cv2.cvtColor(Ilp, cv2.COLOR_GRAY2BGR)
+
+				s = Shape(Llp[0].pts)
+
+				cv2.imwrite('%s/%s_lp.png' % (output_dir,bname),Ilp*255.)
+				writeShapes('%s/%s_lp.txt' % (output_dir,bname),[s])
