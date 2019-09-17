@@ -2,7 +2,7 @@
 The project has three components: 
 
 1. Vehilce Detection using YOLO 
-2. License Plate segmentation, done using WPOD-NET (currently under reviewing due to inaccurate results)
+2. License Plate segmentation, done using WPOD-NET (currently under review, due to; not so encouraging results)
 3. OCR from License Plates: Done using KNN, Tessaract and CNN to compare the accuracy of the methods.
 
 The project is inspired from https://arxiv.org/abs/1312.6082 , developing CNN based Multi Digit Recognition which performed very well even on the Hardest CAPTCHA
