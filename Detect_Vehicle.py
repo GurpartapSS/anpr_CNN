@@ -91,10 +91,12 @@ for output in layerOutputs:
 
 			# update our list of bounding box coordinates, confidences,
 			# and class IDs
-			boxes.append([x, y, int(width), int(height)])
-			confidences.append(float(confidence))
-			classIDs.append(classID)
+			if(classID == 2):
 
+				boxes.append([x, y, int(width), int(height)])
+				confidences.append(float(confidence))
+				classIDs.append(classID)
+				
 # apply non-maxima suppression to suppress weak, overlapping bounding
 # boxes
 idxs = cv2.dnn.NMSBoxes(boxes, confidences, args["confidence"],
